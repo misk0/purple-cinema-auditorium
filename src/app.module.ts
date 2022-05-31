@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuditoriumModule } from './auditorium/auditorium.module';
 import { MongooseModule } from '@nestjs/mongoose';
+
 
 @Module({
   imports: [    
@@ -11,9 +12,21 @@ import { MongooseModule } from '@nestjs/mongoose';
       isGlobal: true,
     }),
     AuditoriumModule,
-    MongooseModule.forRoot('mongodb://192.168.111.202:32017/auditorium')
+    ConfigModule,
+//    MongooseModule.forRoot('mongodb://192.168.111.202:32017/auditorium')
+    MongooseModule.forRootAsync({
+      imports:[ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>("MONGODB_URL")
+      }),
+      inject: [ConfigService]
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private configService: ConfigService) {
+    MongooseModule.forRoot(configService.get<string>("MONGODB_URL"))
+  };
+}
