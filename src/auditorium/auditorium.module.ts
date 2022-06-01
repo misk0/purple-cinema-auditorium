@@ -5,8 +5,12 @@ import { AuditoriumService } from './auditorium.service';
 import { Auditorium, AuditoriumSchema } from './schemas/auditorium.schema';
 
 @Module({
-  imports: [ MongooseModule.forFeature( [ {name: Auditorium.name, schema: AuditoriumSchema} ] ) ],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Auditorium.name, schema: AuditoriumSchema },
+    ]),
+  ],
   controllers: [AuditoriumController],
-  providers: [AuditoriumService]
+  providers: [AuditoriumService],
 })
 export class AuditoriumModule {}

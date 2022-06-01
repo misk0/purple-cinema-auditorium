@@ -1,6 +1,6 @@
 export enum SeatType {
-    UNDEFINED,
-    FREE,
-    OCCUPIED,
-    LOVESEAT
+  UNDEFINED,
+  FREE,
+  OCCUPIED,
+  LOVESEAT,
 }

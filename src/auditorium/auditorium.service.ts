@@ -6,51 +6,62 @@ import { Auditorium, AuditoriumDocument } from './schemas/auditorium.schema';
 
 @Injectable()
 export class AuditoriumService {
-    constructor( @InjectModel(Auditorium.name) 
-                private auditoriumModel: Model<AuditoriumDocument>) {}
-    
-    async create(createAuditoriumDto: CreateAuditoriumDto): Promise<Auditorium> {
-        let seats = [];
-        for (let row = 0; row < createAuditoriumDto.rows; row++) {
-            for (let col = 0; col < createAuditoriumDto.columns; col++ ){
-                seats.push({'row': row, 'col': col, 'type': 'X'})
-            }
-        }
-        (createAuditoriumDto as any).seats = seats;
+  constructor(
+    @InjectModel(Auditorium.name)
+    private auditoriumModel: Model<AuditoriumDocument>,
+  ) {}
 
-        const createdAuditorum = new this.auditoriumModel(createAuditoriumDto);
-        console.log(createAuditoriumDto);
-        //createdAuditorum.populate({path: 'seats', populate: seats});
-        return createdAuditorum.save();
+  async create(createAuditoriumDto: CreateAuditoriumDto): Promise<Auditorium> {
+    let seats = [];
+    for (let row = 0; row < createAuditoriumDto.rows; row++) {
+      for (let col = 0; col < createAuditoriumDto.columns; col++) {
+        seats.push({ row: row, col: col, type: 'X' });
+      }
     }
+    (createAuditoriumDto as any).seats = seats;
 
-    async findAll() : Promise<Auditorium[]> {
-        return await this.auditoriumModel.find().exec();
-    }
+    const createdAuditorum = new this.auditoriumModel(createAuditoriumDto);
+    console.log(createAuditoriumDto);
+    //createdAuditorum.populate({path: 'seats', populate: seats});
+    return createdAuditorum.save();
+  }
 
-    async getAuditoriumById(auditoriumId: string) {
-        return await this.auditoriumModel.findById(auditoriumId);
-    }
+  async findAll(): Promise<Auditorium[]> {
+    return await this.auditoriumModel.find().exec();
+  }
 
-    async updateAuditorum(auditoriumId: string, editAuditorium: EditAuditoriumDto ) {
-        const editedAuditorium = this.auditoriumModel.findByIdAndUpdate(auditoriumId, editAuditorium, {new: true})
-        return editedAuditorium;
-    }
+  async getAuditoriumById(auditoriumId: string) {
+    return await this.auditoriumModel.findById(auditoriumId);
+  }
 
-    async delete(auditoriumId: string) {
-        return this.auditoriumModel.deleteOne({ _id: auditoriumId});
-        
-    }
+  async updateAuditorum(
+    auditoriumId: string,
+    editAuditorium: EditAuditoriumDto,
+  ) {
+    const editedAuditorium = this.auditoriumModel.findByIdAndUpdate(
+      auditoriumId,
+      editAuditorium,
+      { new: true },
+    );
+    return editedAuditorium;
+  }
 
-    async getAuditoriumSeatsById(auditoriumId: string) {
-        return  await this.auditoriumModel.findById(auditoriumId).select('seats');
-    }
+  async delete(auditoriumId: string) {
+    return this.auditoriumModel.deleteOne({ _id: auditoriumId });
+  }
 
-    async editSeatType(auditoriumId: string, seatConfig: SeatDto) {
-        console.log(seatConfig);
-        return await this.auditoriumModel.updateOne({_id: auditoriumId, seats: { $elemMatch: {row: seatConfig.row, col: seatConfig.column}}},
-                                                    {"$set": {"seats.$.type": seatConfig.type}});
-    }
+  async getAuditoriumSeatsById(auditoriumId: string) {
+    return await this.auditoriumModel.findById(auditoriumId).select('seats');
+  }
 
-
+  async editSeatType(auditoriumId: string, seatConfig: SeatDto) {
+    console.log(seatConfig);
+    return await this.auditoriumModel.updateOne(
+      {
+        _id: auditoriumId,
+        seats: { $elemMatch: { row: seatConfig.row, col: seatConfig.column } },
+      },
+      { $set: { 'seats.$.type': seatConfig.type } },
+    );
+  }
 }
