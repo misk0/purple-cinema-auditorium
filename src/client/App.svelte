@@ -1,8 +1,7 @@
 <script>
-import { async } from "rxjs";
-
 	import { onMount } from "svelte";
 	import RowSeats from './RowSeats.svelte';
+	import CreateAuditorium from './CreateAuditorium.svelte';
 
 	let auditoriums = [];
 	let selectedId; 
@@ -72,9 +71,8 @@ import { async } from "rxjs";
 			{/each}
 		{/if}
 	</div>
+	<CreateAuditorium />
 </main>
-
-
 
 <style>
 	main {

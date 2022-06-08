@@ -67,8 +67,14 @@ var app = (function () {
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
     }
+    function to_number(value) {
+        return value === '' ? null : +value;
+    }
     function children(element) {
         return Array.from(element.childNodes);
+    }
+    function set_input_value(input, value) {
+        input.value = value == null ? '' : value;
     }
     function select_option(select, value) {
         for (let i = 0; i < select.options.length; i += 1) {
@@ -554,417 +560,10 @@ var app = (function () {
         $inject_state() { }
     }
 
-    /******************************************************************************
-    Copyright (c) Microsoft Corporation.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with or without fee is hereby granted.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-    PERFORMANCE OF THIS SOFTWARE.
-    ***************************************************************************** */
-    /* global Reflect, Promise */
-
-    var extendStatics = function(d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-
-    function __extends(d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    }
-
-    function __values(o) {
-        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-        if (m) return m.call(o);
-        if (o && typeof o.length === "number") return {
-            next: function () {
-                if (o && i >= o.length) o = void 0;
-                return { value: o && o[i++], done: !o };
-            }
-        };
-        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-    }
-
-    function __read(o, n) {
-        var m = typeof Symbol === "function" && o[Symbol.iterator];
-        if (!m) return o;
-        var i = m.call(o), r, ar = [], e;
-        try {
-            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-        }
-        catch (error) { e = { error: error }; }
-        finally {
-            try {
-                if (r && !r.done && (m = i["return"])) m.call(i);
-            }
-            finally { if (e) throw e.error; }
-        }
-        return ar;
-    }
-
-    function __spreadArray(to, from, pack) {
-        if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-            if (ar || !(i in from)) {
-                if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-                ar[i] = from[i];
-            }
-        }
-        return to.concat(ar || Array.prototype.slice.call(from));
-    }
-
-    function isFunction(value) {
-        return typeof value === 'function';
-    }
-
-    function createErrorClass(createImpl) {
-        var _super = function (instance) {
-            Error.call(instance);
-            instance.stack = new Error().stack;
-        };
-        var ctorFunc = createImpl(_super);
-        ctorFunc.prototype = Object.create(Error.prototype);
-        ctorFunc.prototype.constructor = ctorFunc;
-        return ctorFunc;
-    }
-
-    var UnsubscriptionError = createErrorClass(function (_super) {
-        return function UnsubscriptionErrorImpl(errors) {
-            _super(this);
-            this.message = errors
-                ? errors.length + " errors occurred during unsubscription:\n" + errors.map(function (err, i) { return i + 1 + ") " + err.toString(); }).join('\n  ')
-                : '';
-            this.name = 'UnsubscriptionError';
-            this.errors = errors;
-        };
-    });
-
-    function arrRemove(arr, item) {
-        if (arr) {
-            var index = arr.indexOf(item);
-            0 <= index && arr.splice(index, 1);
-        }
-    }
-
-    var Subscription = (function () {
-        function Subscription(initialTeardown) {
-            this.initialTeardown = initialTeardown;
-            this.closed = false;
-            this._parentage = null;
-            this._finalizers = null;
-        }
-        Subscription.prototype.unsubscribe = function () {
-            var e_1, _a, e_2, _b;
-            var errors;
-            if (!this.closed) {
-                this.closed = true;
-                var _parentage = this._parentage;
-                if (_parentage) {
-                    this._parentage = null;
-                    if (Array.isArray(_parentage)) {
-                        try {
-                            for (var _parentage_1 = __values(_parentage), _parentage_1_1 = _parentage_1.next(); !_parentage_1_1.done; _parentage_1_1 = _parentage_1.next()) {
-                                var parent_1 = _parentage_1_1.value;
-                                parent_1.remove(this);
-                            }
-                        }
-                        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                        finally {
-                            try {
-                                if (_parentage_1_1 && !_parentage_1_1.done && (_a = _parentage_1.return)) _a.call(_parentage_1);
-                            }
-                            finally { if (e_1) throw e_1.error; }
-                        }
-                    }
-                    else {
-                        _parentage.remove(this);
-                    }
-                }
-                var initialFinalizer = this.initialTeardown;
-                if (isFunction(initialFinalizer)) {
-                    try {
-                        initialFinalizer();
-                    }
-                    catch (e) {
-                        errors = e instanceof UnsubscriptionError ? e.errors : [e];
-                    }
-                }
-                var _finalizers = this._finalizers;
-                if (_finalizers) {
-                    this._finalizers = null;
-                    try {
-                        for (var _finalizers_1 = __values(_finalizers), _finalizers_1_1 = _finalizers_1.next(); !_finalizers_1_1.done; _finalizers_1_1 = _finalizers_1.next()) {
-                            var finalizer = _finalizers_1_1.value;
-                            try {
-                                execFinalizer(finalizer);
-                            }
-                            catch (err) {
-                                errors = errors !== null && errors !== void 0 ? errors : [];
-                                if (err instanceof UnsubscriptionError) {
-                                    errors = __spreadArray(__spreadArray([], __read(errors)), __read(err.errors));
-                                }
-                                else {
-                                    errors.push(err);
-                                }
-                            }
-                        }
-                    }
-                    catch (e_2_1) { e_2 = { error: e_2_1 }; }
-                    finally {
-                        try {
-                            if (_finalizers_1_1 && !_finalizers_1_1.done && (_b = _finalizers_1.return)) _b.call(_finalizers_1);
-                        }
-                        finally { if (e_2) throw e_2.error; }
-                    }
-                }
-                if (errors) {
-                    throw new UnsubscriptionError(errors);
-                }
-            }
-        };
-        Subscription.prototype.add = function (teardown) {
-            var _a;
-            if (teardown && teardown !== this) {
-                if (this.closed) {
-                    execFinalizer(teardown);
-                }
-                else {
-                    if (teardown instanceof Subscription) {
-                        if (teardown.closed || teardown._hasParent(this)) {
-                            return;
-                        }
-                        teardown._addParent(this);
-                    }
-                    (this._finalizers = (_a = this._finalizers) !== null && _a !== void 0 ? _a : []).push(teardown);
-                }
-            }
-        };
-        Subscription.prototype._hasParent = function (parent) {
-            var _parentage = this._parentage;
-            return _parentage === parent || (Array.isArray(_parentage) && _parentage.includes(parent));
-        };
-        Subscription.prototype._addParent = function (parent) {
-            var _parentage = this._parentage;
-            this._parentage = Array.isArray(_parentage) ? (_parentage.push(parent), _parentage) : _parentage ? [_parentage, parent] : parent;
-        };
-        Subscription.prototype._removeParent = function (parent) {
-            var _parentage = this._parentage;
-            if (_parentage === parent) {
-                this._parentage = null;
-            }
-            else if (Array.isArray(_parentage)) {
-                arrRemove(_parentage, parent);
-            }
-        };
-        Subscription.prototype.remove = function (teardown) {
-            var _finalizers = this._finalizers;
-            _finalizers && arrRemove(_finalizers, teardown);
-            if (teardown instanceof Subscription) {
-                teardown._removeParent(this);
-            }
-        };
-        Subscription.EMPTY = (function () {
-            var empty = new Subscription();
-            empty.closed = true;
-            return empty;
-        })();
-        return Subscription;
-    }());
-    Subscription.EMPTY;
-    function execFinalizer(finalizer) {
-        if (isFunction(finalizer)) {
-            finalizer();
-        }
-        else {
-            finalizer.unsubscribe();
-        }
-    }
-
-    var dateTimestampProvider = {
-        now: function () {
-            return (dateTimestampProvider.delegate || Date).now();
-        },
-        delegate: undefined,
-    };
-
-    var Action = (function (_super) {
-        __extends(Action, _super);
-        function Action(scheduler, work) {
-            return _super.call(this) || this;
-        }
-        Action.prototype.schedule = function (state, delay) {
-            return this;
-        };
-        return Action;
-    }(Subscription));
-
-    var intervalProvider = {
-        setInterval: function (handler, timeout) {
-            var args = [];
-            for (var _i = 2; _i < arguments.length; _i++) {
-                args[_i - 2] = arguments[_i];
-            }
-            var delegate = intervalProvider.delegate;
-            if (delegate === null || delegate === void 0 ? void 0 : delegate.setInterval) {
-                return delegate.setInterval.apply(delegate, __spreadArray([handler, timeout], __read(args)));
-            }
-            return setInterval.apply(void 0, __spreadArray([handler, timeout], __read(args)));
-        },
-        clearInterval: function (handle) {
-            var delegate = intervalProvider.delegate;
-            return ((delegate === null || delegate === void 0 ? void 0 : delegate.clearInterval) || clearInterval)(handle);
-        },
-        delegate: undefined,
-    };
-
-    var AsyncAction = (function (_super) {
-        __extends(AsyncAction, _super);
-        function AsyncAction(scheduler, work) {
-            var _this = _super.call(this, scheduler, work) || this;
-            _this.scheduler = scheduler;
-            _this.work = work;
-            _this.pending = false;
-            return _this;
-        }
-        AsyncAction.prototype.schedule = function (state, delay) {
-            if (delay === void 0) { delay = 0; }
-            if (this.closed) {
-                return this;
-            }
-            this.state = state;
-            var id = this.id;
-            var scheduler = this.scheduler;
-            if (id != null) {
-                this.id = this.recycleAsyncId(scheduler, id, delay);
-            }
-            this.pending = true;
-            this.delay = delay;
-            this.id = this.id || this.requestAsyncId(scheduler, this.id, delay);
-            return this;
-        };
-        AsyncAction.prototype.requestAsyncId = function (scheduler, _id, delay) {
-            if (delay === void 0) { delay = 0; }
-            return intervalProvider.setInterval(scheduler.flush.bind(scheduler, this), delay);
-        };
-        AsyncAction.prototype.recycleAsyncId = function (_scheduler, id, delay) {
-            if (delay === void 0) { delay = 0; }
-            if (delay != null && this.delay === delay && this.pending === false) {
-                return id;
-            }
-            intervalProvider.clearInterval(id);
-            return undefined;
-        };
-        AsyncAction.prototype.execute = function (state, delay) {
-            if (this.closed) {
-                return new Error('executing a cancelled action');
-            }
-            this.pending = false;
-            var error = this._execute(state, delay);
-            if (error) {
-                return error;
-            }
-            else if (this.pending === false && this.id != null) {
-                this.id = this.recycleAsyncId(this.scheduler, this.id, null);
-            }
-        };
-        AsyncAction.prototype._execute = function (state, _delay) {
-            var errored = false;
-            var errorValue;
-            try {
-                this.work(state);
-            }
-            catch (e) {
-                errored = true;
-                errorValue = e ? e : new Error('Scheduled action threw falsy error');
-            }
-            if (errored) {
-                this.unsubscribe();
-                return errorValue;
-            }
-        };
-        AsyncAction.prototype.unsubscribe = function () {
-            if (!this.closed) {
-                var _a = this, id = _a.id, scheduler = _a.scheduler;
-                var actions = scheduler.actions;
-                this.work = this.state = this.scheduler = null;
-                this.pending = false;
-                arrRemove(actions, this);
-                if (id != null) {
-                    this.id = this.recycleAsyncId(scheduler, id, null);
-                }
-                this.delay = null;
-                _super.prototype.unsubscribe.call(this);
-            }
-        };
-        return AsyncAction;
-    }(Action));
-
-    var Scheduler = (function () {
-        function Scheduler(schedulerActionCtor, now) {
-            if (now === void 0) { now = Scheduler.now; }
-            this.schedulerActionCtor = schedulerActionCtor;
-            this.now = now;
-        }
-        Scheduler.prototype.schedule = function (work, delay, state) {
-            if (delay === void 0) { delay = 0; }
-            return new this.schedulerActionCtor(this, work).schedule(state, delay);
-        };
-        Scheduler.now = dateTimestampProvider.now;
-        return Scheduler;
-    }());
-
-    var AsyncScheduler = (function (_super) {
-        __extends(AsyncScheduler, _super);
-        function AsyncScheduler(SchedulerAction, now) {
-            if (now === void 0) { now = Scheduler.now; }
-            var _this = _super.call(this, SchedulerAction, now) || this;
-            _this.actions = [];
-            _this._active = false;
-            _this._scheduled = undefined;
-            return _this;
-        }
-        AsyncScheduler.prototype.flush = function (action) {
-            var actions = this.actions;
-            if (this._active) {
-                actions.push(action);
-                return;
-            }
-            var error;
-            this._active = true;
-            do {
-                if ((error = action.execute(action.state, action.delay))) {
-                    break;
-                }
-            } while ((action = actions.shift()));
-            this._active = false;
-            if (error) {
-                while ((action = actions.shift())) {
-                    action.unsubscribe();
-                }
-                throw error;
-            }
-        };
-        return AsyncScheduler;
-    }(Scheduler));
-
-    var asyncScheduler = new AsyncScheduler(AsyncAction);
-    var async = asyncScheduler;
-
     /* src\client\Seat.svelte generated by Svelte v3.48.0 */
-    const file$2 = "src\\client\\Seat.svelte";
+    const file$3 = "src\\client\\Seat.svelte";
 
-    function create_fragment$2(ctx) {
+    function create_fragment$3(ctx) {
     	let div;
     	let t_value = /*seat*/ ctx[0].type + "";
     	let t;
@@ -977,7 +576,7 @@ var app = (function () {
     			div = element("div");
     			t = text(t_value);
     			attr_dev(div, "class", div_class_value = "" + (null_to_empty(/*seatColor*/ ctx[1]) + " svelte-hkd6b0"));
-    			add_location(div, file$2, 19, 0, 485);
+    			add_location(div, file$3, 19, 0, 485);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1009,7 +608,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$2.name,
+    		id: create_fragment$3.name,
     		type: "component",
     		source: "",
     		ctx
@@ -1018,7 +617,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$2($$self, $$props, $$invalidate) {
+    function instance$3($$self, $$props, $$invalidate) {
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('Seat', slots, []);
     	const dispatch = createEventDispatcher();
@@ -1070,13 +669,13 @@ var app = (function () {
     class Seat extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { seat: 0 });
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, { seat: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Seat",
     			options,
-    			id: create_fragment$2.name
+    			id: create_fragment$3.name
     		});
 
     		const { ctx } = this.$$;
@@ -1097,7 +696,7 @@ var app = (function () {
     }
 
     /* src\client\RowSeats.svelte generated by Svelte v3.48.0 */
-    const file$1 = "src\\client\\RowSeats.svelte";
+    const file$2 = "src\\client\\RowSeats.svelte";
 
     function get_each_context$1(ctx, list, i) {
     	const child_ctx = ctx.slice();
@@ -1164,7 +763,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$1(ctx) {
+    function create_fragment$2(ctx) {
     	let div;
     	let each_blocks = [];
     	let each_1_lookup = new Map();
@@ -1189,7 +788,7 @@ var app = (function () {
     			}
 
     			attr_dev(div, "class", "svelte-ubyvcm");
-    			add_location(div, file$1, 5, 0, 90);
+    			add_location(div, file$2, 5, 0, 90);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1240,7 +839,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$1.name,
+    		id: create_fragment$2.name,
     		type: "component",
     		source: "",
     		ctx
@@ -1249,7 +848,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$1($$self, $$props, $$invalidate) {
+    function instance$2($$self, $$props, $$invalidate) {
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('RowSeats', slots, []);
     	let { seats = [] } = $$props;
@@ -1283,13 +882,13 @@ var app = (function () {
     class RowSeats extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$1, create_fragment$1, safe_not_equal, { seats: 0 });
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { seats: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "RowSeats",
     			options,
-    			id: create_fragment$1.name
+    			id: create_fragment$2.name
     		});
     	}
 
@@ -1299,6 +898,249 @@ var app = (function () {
 
     	set seats(value) {
     		throw new Error("<RowSeats>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* src\client\CreateAuditorium.svelte generated by Svelte v3.48.0 */
+
+    const file$1 = "src\\client\\CreateAuditorium.svelte";
+
+    function create_fragment$1(ctx) {
+    	let div;
+    	let h1;
+    	let t1;
+    	let label0;
+    	let t2;
+    	let input0;
+    	let t3;
+    	let label1;
+    	let t4;
+    	let input1;
+    	let t5;
+    	let label2;
+    	let t6;
+    	let input2;
+    	let t7;
+    	let label3;
+    	let t8;
+    	let input3;
+    	let t9;
+    	let button;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			h1 = element("h1");
+    			h1.textContent = "Create auditorium";
+    			t1 = space();
+    			label0 = element("label");
+    			t2 = text("Auditorium name: \r\n        ");
+    			input0 = element("input");
+    			t3 = space();
+    			label1 = element("label");
+    			t4 = text("Theatre: \r\n        ");
+    			input1 = element("input");
+    			t5 = space();
+    			label2 = element("label");
+    			t6 = text("Rows: \r\n        ");
+    			input2 = element("input");
+    			t7 = space();
+    			label3 = element("label");
+    			t8 = text("Columns: \r\n        ");
+    			input3 = element("input");
+    			t9 = space();
+    			button = element("button");
+    			button.textContent = "Create";
+    			add_location(h1, file$1, 22, 4, 572);
+    			attr_dev(input0, "type", "text");
+    			add_location(input0, file$1, 25, 8, 648);
+    			add_location(label0, file$1, 23, 4, 604);
+    			attr_dev(input1, "type", "text");
+    			add_location(input1, file$1, 29, 8, 751);
+    			add_location(label1, file$1, 27, 4, 715);
+    			attr_dev(input2, "type", "number");
+    			attr_dev(input2, "min", "1");
+    			attr_dev(input2, "max", "10");
+    			add_location(input2, file$1, 33, 8, 848);
+    			add_location(label2, file$1, 31, 4, 815);
+    			attr_dev(input3, "type", "number");
+    			attr_dev(input3, "min", "1");
+    			attr_dev(input3, "max", "15");
+    			add_location(input3, file$1, 37, 8, 956);
+    			add_location(label3, file$1, 35, 4, 920);
+    			add_location(button, file$1, 40, 4, 1030);
+    			attr_dev(div, "class", "svelte-kzcrhm");
+    			add_location(div, file$1, 21, 0, 561);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			append_dev(div, h1);
+    			append_dev(div, t1);
+    			append_dev(div, label0);
+    			append_dev(label0, t2);
+    			append_dev(label0, input0);
+    			set_input_value(input0, /*auditoriumName*/ ctx[0]);
+    			append_dev(div, t3);
+    			append_dev(div, label1);
+    			append_dev(label1, t4);
+    			append_dev(label1, input1);
+    			set_input_value(input1, /*theatreName*/ ctx[1]);
+    			append_dev(div, t5);
+    			append_dev(div, label2);
+    			append_dev(label2, t6);
+    			append_dev(label2, input2);
+    			set_input_value(input2, /*rows*/ ctx[2]);
+    			append_dev(div, t7);
+    			append_dev(div, label3);
+    			append_dev(label3, t8);
+    			append_dev(label3, input3);
+    			set_input_value(input3, /*cols*/ ctx[3]);
+    			append_dev(div, t9);
+    			append_dev(div, button);
+
+    			if (!mounted) {
+    				dispose = [
+    					listen_dev(input0, "input", /*input0_input_handler*/ ctx[5]),
+    					listen_dev(input1, "input", /*input1_input_handler*/ ctx[6]),
+    					listen_dev(input2, "input", /*input2_input_handler*/ ctx[7]),
+    					listen_dev(input3, "input", /*input3_input_handler*/ ctx[8]),
+    					listen_dev(button, "click", /*submitData*/ ctx[4], false, false, false)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (dirty & /*auditoriumName*/ 1 && input0.value !== /*auditoriumName*/ ctx[0]) {
+    				set_input_value(input0, /*auditoriumName*/ ctx[0]);
+    			}
+
+    			if (dirty & /*theatreName*/ 2 && input1.value !== /*theatreName*/ ctx[1]) {
+    				set_input_value(input1, /*theatreName*/ ctx[1]);
+    			}
+
+    			if (dirty & /*rows*/ 4 && to_number(input2.value) !== /*rows*/ ctx[2]) {
+    				set_input_value(input2, /*rows*/ ctx[2]);
+    			}
+
+    			if (dirty & /*cols*/ 8 && to_number(input3.value) !== /*cols*/ ctx[3]) {
+    				set_input_value(input3, /*cols*/ ctx[3]);
+    			}
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$1.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$1($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots('CreateAuditorium', slots, []);
+    	let auditoriumName, theatreName, rows = 1, cols = 1;
+
+    	async function submitData(evt) {
+    		let data = {
+    			'name': auditoriumName,
+    			'theatre': theatreName,
+    			'rows': rows.toString(),
+    			'columns': cols.toString()
+    		};
+
+    		await fetch('http://localhost:3333/auditoriums', {
+    			method: 'POST',
+    			headers: { 'Content-Type': 'application/json' },
+    			body: JSON.stringify(data)
+    		});
+    	}
+
+    	const writable_props = [];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<CreateAuditorium> was created with unknown prop '${key}'`);
+    	});
+
+    	function input0_input_handler() {
+    		auditoriumName = this.value;
+    		$$invalidate(0, auditoriumName);
+    	}
+
+    	function input1_input_handler() {
+    		theatreName = this.value;
+    		$$invalidate(1, theatreName);
+    	}
+
+    	function input2_input_handler() {
+    		rows = to_number(this.value);
+    		$$invalidate(2, rows);
+    	}
+
+    	function input3_input_handler() {
+    		cols = to_number(this.value);
+    		$$invalidate(3, cols);
+    	}
+
+    	$$self.$capture_state = () => ({
+    		auditoriumName,
+    		theatreName,
+    		rows,
+    		cols,
+    		submitData
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ('auditoriumName' in $$props) $$invalidate(0, auditoriumName = $$props.auditoriumName);
+    		if ('theatreName' in $$props) $$invalidate(1, theatreName = $$props.theatreName);
+    		if ('rows' in $$props) $$invalidate(2, rows = $$props.rows);
+    		if ('cols' in $$props) $$invalidate(3, cols = $$props.cols);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [
+    		auditoriumName,
+    		theatreName,
+    		rows,
+    		cols,
+    		submitData,
+    		input0_input_handler,
+    		input1_input_handler,
+    		input2_input_handler,
+    		input3_input_handler
+    	];
+    }
+
+    class CreateAuditorium extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$1, create_fragment$1, safe_not_equal, {});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "CreateAuditorium",
+    			options,
+    			id: create_fragment$1.name
+    		});
     	}
     }
 
@@ -1320,7 +1162,7 @@ var app = (function () {
     	return child_ctx;
     }
 
-    // (63:4) {#each auditoriums as auditorium }
+    // (62:4) {#each auditoriums as auditorium }
     function create_each_block_1(ctx) {
     	let option;
     	let t_value = /*auditorium*/ ctx[10].name + "";
@@ -1333,7 +1175,7 @@ var app = (function () {
     			t = text(t_value);
     			option.__value = option_value_value = /*auditorium*/ ctx[10]._id;
     			option.value = option.__value;
-    			add_location(option, file, 63, 5, 1380);
+    			add_location(option, file, 62, 5, 1408);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, option, anchor);
@@ -1356,14 +1198,14 @@ var app = (function () {
     		block,
     		id: create_each_block_1.name,
     		type: "each",
-    		source: "(63:4) {#each auditoriums as auditorium }",
+    		source: "(62:4) {#each auditoriums as auditorium }",
     		ctx
     	});
 
     	return block;
     }
 
-    // (69:2) {#if selectedAud !== undefined}
+    // (68:2) {#if selectedAud !== undefined}
     function create_if_block(ctx) {
     	let each_blocks = [];
     	let each_1_lookup = new Map();
@@ -1435,14 +1277,14 @@ var app = (function () {
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(69:2) {#if selectedAud !== undefined}",
+    		source: "(68:2) {#if selectedAud !== undefined}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (70:3) {#each {length: selectedAud.rows} as _, i (i)}
+    // (69:3) {#each {length: selectedAud.rows} as _, i (i)}
     function create_each_block(key_1, ctx) {
     	let first;
     	let rowseats;
@@ -1495,7 +1337,7 @@ var app = (function () {
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(70:3) {#each {length: selectedAud.rows} as _, i (i)}",
+    		source: "(69:3) {#each {length: selectedAud.rows} as _, i (i)}",
     		ctx
     	});
 
@@ -1511,6 +1353,8 @@ var app = (function () {
     	let div1;
     	let select;
     	let t2;
+    	let t3;
+    	let createauditorium;
     	let current;
     	let mounted;
     	let dispose;
@@ -1523,6 +1367,7 @@ var app = (function () {
     	}
 
     	let if_block = /*selectedAud*/ ctx[2] !== undefined && create_if_block(ctx);
+    	createauditorium = new CreateAuditorium({ $$inline: true });
 
     	const block = {
     		c: function create() {
@@ -1541,17 +1386,19 @@ var app = (function () {
 
     			t2 = space();
     			if (if_block) if_block.c();
+    			t3 = space();
+    			create_component(createauditorium.$$.fragment);
     			attr_dev(h1, "class", "svelte-10mpxtb");
-    			add_location(h1, file, 57, 2, 1183);
-    			add_location(div0, file, 56, 1, 1175);
+    			add_location(h1, file, 56, 2, 1211);
+    			add_location(div0, file, 55, 1, 1203);
     			if (/*selectedId*/ ctx[1] === void 0) add_render_callback(() => /*select_change_handler*/ ctx[6].call(select));
-    			add_location(select, file, 61, 3, 1274);
+    			add_location(select, file, 60, 3, 1302);
     			attr_dev(div1, "class", "selectbox svelte-10mpxtb");
-    			add_location(div1, file, 60, 2, 1247);
+    			add_location(div1, file, 59, 2, 1275);
     			attr_dev(div2, "class", "body svelte-10mpxtb");
-    			add_location(div2, file, 59, 1, 1226);
+    			add_location(div2, file, 58, 1, 1254);
     			attr_dev(main, "class", "svelte-10mpxtb");
-    			add_location(main, file, 55, 0, 1167);
+    			add_location(main, file, 54, 0, 1195);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1572,6 +1419,8 @@ var app = (function () {
     			select_option(select, /*selectedId*/ ctx[1]);
     			append_dev(div2, t2);
     			if (if_block) if_block.m(div2, null);
+    			append_dev(main, t3);
+    			mount_component(createauditorium, main, null);
     			current = true;
 
     			if (!mounted) {
@@ -1638,16 +1487,19 @@ var app = (function () {
     		i: function intro(local) {
     			if (current) return;
     			transition_in(if_block);
+    			transition_in(createauditorium.$$.fragment, local);
     			current = true;
     		},
     		o: function outro(local) {
     			transition_out(if_block);
+    			transition_out(createauditorium.$$.fragment, local);
     			current = false;
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(main);
     			destroy_each(each_blocks, detaching);
     			if (if_block) if_block.d();
+    			destroy_component(createauditorium);
     			mounted = false;
     			run_all(dispose);
     		}
@@ -1725,9 +1577,9 @@ var app = (function () {
     	}
 
     	$$self.$capture_state = () => ({
-    		async,
     		onMount,
     		RowSeats,
+    		CreateAuditorium,
     		auditoriums,
     		selectedId,
     		selectedAud,
