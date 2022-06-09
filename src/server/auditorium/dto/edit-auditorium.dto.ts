@@ -1,8 +1,6 @@
 import {
-  IsNotEmpty,
-  IsNumberString,
   IsOptional,
-  IsString,
+  IsString
 } from 'class-validator';
 
 export class EditAuditoriumDto {
