@@ -7,7 +7,7 @@ Goal is to create a microservice application which handles cinema auditoriums.
 ## Instructions:
 
 install roll up
-> npm install rollup
+> npm install rollup --location=global
 
 create *.env* file in project root with 
 > MONGODB_URL = mongodb://192.168.1.1:21207/auditorium
