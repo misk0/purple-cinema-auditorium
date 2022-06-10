@@ -5,8 +5,8 @@
         let data = {
             'name': auditoriumName,
             'theatre': theatreName,
-            'rows': rows.toString(),
-            'columns': cols.toString()
+            'rows': rows,
+            'columns': cols
         }
 
         const post = await fetch('http://localhost:3333/auditoriums', {

@@ -1,9 +1,7 @@
 import {
   IsNotEmpty,
-  IsNumberString,
-  IsOptional,
-  IsString,
-  isValidationOptions,
+  IsNumber, IsOptional,
+  IsString, Min
 } from 'class-validator';
 
 export class CreateAuditoriumDto {
@@ -15,9 +13,13 @@ export class CreateAuditoriumDto {
   @IsOptional()
   theatre: String;
 
-  @IsNumberString({}, { message: 'Rows parameter is missing or malformed' })
+  //@IsNumberString({}, { message: 'Rows parameter is missing or malformed' })
+  @IsNumber()
+  @Min(1)
   rows: Number;
 
-  @IsNumberString({}, { message: 'Columns parameter is missing or malformed' })
+  @IsNumber()
+  @Min(1)
+  //@IsNumberString({}, { message: 'Columns parameter is missing or malformed' })
   columns: Number;
 }
