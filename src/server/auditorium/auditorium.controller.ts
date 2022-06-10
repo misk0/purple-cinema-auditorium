@@ -8,12 +8,10 @@ import {
   Param,
   Patch,
   Post,
-  Put,
-  Req,
+  Put
 } from '@nestjs/common';
-import { AuditoriumService as AuditoriumService } from './auditorium.service';
+import { AuditoriumService } from './auditorium.service';
 import { CreateAuditoriumDto, EditAuditoriumDto, SeatDto } from './dto';
-import { SeatType } from './enums/seat-type.enum';
 
 @Controller('auditoriums')
 export class AuditoriumController {
