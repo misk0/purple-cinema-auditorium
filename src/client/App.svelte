@@ -4,16 +4,23 @@
 	import CreateAuditorium from './CreateAuditorium.svelte';
 
 	let auditoriums = [];
-	let selectedId; 
+	let selectedId = '', deleteId =''; 
 	let selectedAud;
+	let visiblePanel = 'create'
+
 
 	onMount(async () => {
+		updateAuditoriumsBox();
+	});
+
+	function updateAuditoriumsBox() {
 		fetch('http://localhost:3333/auditoriums')
 			.then(response => response.json())
 			.then(data => {
 				auditoriums = data;
 			});
-	});
+
+	}
 
 	function chooseAuditorium(evt) {
 		selectedAud = auditoriums.find( aud => aud._id == selectedId);
@@ -33,8 +40,6 @@
 		let seat = evt.detail.seat;
 		const seatType = seat.type === "X" ? "F": "X";
 
-		console.log(seat)
-		
 		const res = await fetch ('http://localhost:3333/auditoriums/editSeat/'+ selectedAud._id, {
 			method: 'PUT',
 			headers: {
@@ -47,7 +52,28 @@
 			})
 		});
 		const json = await res.json();
-		console.log(json);
+	}
+
+	function editButton() {
+		visiblePanel = "edit";
+		updateAuditoriumsBox();
+	}
+
+	function deleteButton() {
+		visiblePanel = "delete";
+		updateAuditoriumsBox();
+	}
+
+	async function deleteAuditorum() {
+		const res = await fetch ('http://localhost:3333/auditoriums/'+ deleteId, {
+			method: 'DELETE',
+		});
+		const json = await res.json();
+		if (json.deletedCount == 1) {
+			auditoriums = auditoriums.filter(item => {
+				return item._id !== deleteId;
+			})
+		}
 	}
 
 </script>
@@ -57,21 +83,46 @@
 		<h1>Auditorium configuration</h1>
 	</div>
 	<div class="body">
-		<div class="selectbox">
-			<select bind:value={selectedId} on:change={chooseAuditorium}>
-				{#each auditoriums as auditorium }
-					<option value={auditorium._id}>{auditorium.name}</option>		
-				{/each}
-			</select>
+		<div>
+			<button on:click={() => visiblePanel = "create"} disabled={visiblePanel == "create"}>
+				Create
+			</button>
+			<button on:click={editButton} disabled={visiblePanel == "edit"}>
+				Update
+			</button>
+			<button on:click={deleteButton} disabled={visiblePanel == "delete"}>
+				Delete
+			</button>
 		</div>
 
-		{#if selectedAud !== undefined}
-			{#each {length: selectedAud.rows} as _, i (i)}
-				<RowSeats seats={extractSeatsForRow(i)} on:changeSeatState={changeSeatState}/>
-			{/each}
+		{#if visiblePanel === "edit"}
+			<div class="selectbox">
+				<select bind:value={selectedId} on:change={chooseAuditorium}>
+					{#each auditoriums as auditorium }
+						<option value={auditorium._id}>{auditorium.name}</option>		
+					{/each}
+				</select>
+			</div>
+			{#if selectedAud && selectedId !== ''}
+				{#each {length: selectedAud.rows} as _, i (i)}
+					<RowSeats seats={extractSeatsForRow(i)} on:changeSeatState={changeSeatState}/>
+				{/each}
+			{/if}
+		{/if}
+		{#if visiblePanel === "create"}
+			<CreateAuditorium />
+		{/if}
+
+		{#if visiblePanel === "delete"}
+				<select bind:value={deleteId}>
+					{#each auditoriums as auditorium }
+						<option value={auditorium._id}>{auditorium.name}</option>		
+					{/each}
+				</select>
+				<button on:click={deleteAuditorum}>Delete</button>
 		{/if}
 	</div>
-	<CreateAuditorium />
+	
 </main>
 
 <style>

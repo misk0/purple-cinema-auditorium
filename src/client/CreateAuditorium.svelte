@@ -16,6 +16,15 @@
             },
             body: JSON.stringify(data)
         })
+
+        if (post.ok) {
+            auditoriumName = '';
+            theatreName = '';
+            rows = 1;
+            cols = 1;
+        } else {
+            console.error("Error happend: " + post.statusText);
+        }
     }
 </script>
 
@@ -46,6 +55,5 @@
 <style>
     div {
         text-align: right;
-        width: 700px;
     }
 </style>
